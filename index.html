@@ -216,42 +216,64 @@ function updateCount(delta){
   updateStats()
 }
 
-// Main button
+// Main button with hold support
 const mainBtn=document.getElementById('mainBtn');
-mainBtn.onclick=(e)=>{
+
+function handlePress(e){
+  // Get coordinates from either touch or mouse
+  const x=e.touches?e.touches[0].clientX:e.clientX;
+  const y=e.touches?e.touches[0].clientY:e.clientY;
+  
   // Ripple
   const r=document.createElement('span');
   r.classList.add('ripple');
   const rect=mainBtn.getBoundingClientRect();
-  r.style.left=(e.clientX-rect.left)+'px';
-  r.style.top=(e.clientY-rect.top)+'px';
+  r.style.left=(x-rect.left)+'px';
+  r.style.top=(y-rect.top)+'px';
   mainBtn.appendChild(r);
   setTimeout(()=>r.remove(),600);
+  
   // Particles
-  spawnParticles(e.clientX,e.clientY);
-  updateCount(1)
-};
+  spawnParticles(x,y);
+  
+  // Update count
+  updateCount(1);
+}
+
+// Click/tap
+mainBtn.onclick=handlePress;
 
 // Hold to increment
 let holdTimer=null;
-const holdDelay=150;
-function startHold(v,e){
+const holdDelay=200;
+function startHold(e){
   e.preventDefault();
-  updateCount(v);
-  holdTimer=setInterval(()=>updateCount(v),holdDelay)
+  handlePress(e);
+  holdTimer=setInterval(()=>updateCount(1),holdDelay)
 }
 function stopHold(){
   if(holdTimer){clearInterval(holdTimer);holdTimer=null}
 }
-const mainBtn=document.getElementById('mainBtn');
-mainBtn.ontouchstart=e=>startHold(1,e);
+
+// Touch events for iOS
+mainBtn.ontouchstart=startHold;
 mainBtn.ontouchend=stopHold;
 mainBtn.ontouchcancel=stopHold;
-mainBtn.onmousedown=e=>startHold(1,e);
+
+// Mouse events for desktop
+mainBtn.onmousedown=startHold;
 mainBtn.onmouseup=stopHold;
 mainBtn.onmouseleave=stopHold;
 
-// Keyboard hold
+// Quick buttons
+document.querySelectorAll('.q-btn').forEach(b=>{
+  b.onclick=()=>{
+    const v=b.dataset.v;
+    updateCount(v==='reset'?'reset':parseInt(v))
+  }
+});
+
+// Keyboard (with hold support)
 let keyHoldTimer=null;
 document.addEventListener('keydown',e=>{
   if(e.repeat)return;
