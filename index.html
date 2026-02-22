@@ -265,6 +265,10 @@
     decrementBtn.addEventListener('touchend', (e) => stopHold(e), { passive: false });
     decrementBtn.addEventListener('touchcancel', (e) => stopHold(e), { passive: false });
 
+    // Click events (for single tap)
+    incrementBtn.addEventListener('click', increment);
+    decrementBtn.addEventListener('click', decrement);
+
     // Also handle keyboard hold
     let keyHoldInterval = null;
     document.addEventListener('keydown', (e) => { 
