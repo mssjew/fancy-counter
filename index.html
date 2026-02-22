@@ -226,12 +226,65 @@
     function decrement(e) { totalClicks++; count--; clickTimes.push(Date.now()); updateDisplay(); updateVelocity(); playSound('decrement'); const rect = counterEl.getBoundingClientRect(); createParticles(rect.left + rect.width / 2, rect.top + rect.height / 2); }
     function adjust(amount, e) { totalClicks++; count += amount; clickTimes.push(Date.now()); if (count > maxCount) maxCount = count; updateDisplay(); updateVelocity(); checkAchievements(); playSound('increment'); const rect = counterEl.getBoundingClientRect(); createParticles(rect.left + rect.width / 2, rect.top + rect.height / 2); }
     function reset() { if (confirm('Reset counter to 0?')) { count = 0; totalClicks = 0; maxCount = 0; earnedAchievements = []; localStorage.setItem('counter_achievements', '[]'); sessionStart = Date.now(); clickTimes = []; updateDisplay(); updateVelocity(); } }
-    incrementBtn.addEventListener('click', increment);
-    decrementBtn.addEventListener('click', decrement);
-    resetBtn.addEventListener('click', reset);
-    document.querySelectorAll('.quick-btn').forEach(btn => { btn.addEventListener('click', (e) => { const amount = parseInt(btn.dataset.amount); adjust(amount, e); }); });
-    counterEl.addEventListener('click', (e) => increment(e));
-    document.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); increment(e); } else if (e.code === 'ArrowUp' || e.code === 'ArrowRight') { e.preventDefault(); increment(e); } else if (e.code === 'ArrowDown' || e.code === 'ArrowLeft') { e.preventDefault(); decrement(e); } else if (e.code === 'KeyT') { setTheme(!isLight); } else if (e.code === 'KeyS') { soundEnabled = !soundEnabled; localStorage.setItem('counter_sound', soundEnabled); updateSoundUI(); } else if (e.code === 'KeyR' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); reset(); } });
+    let holdInterval = null;
+    let holdDelay = 150; // ms between increments when holding
+    
+    function startHold(action, e) {
+      // First increment immediately
+      action(e);
+      // Then wait a bit before starting rapid increments
+      setTimeout(() => {
+        holdInterval = setInterval(() => action(e), holdDelay);
+      }, 200);
+    }
+    
+    function stopHold() {
+      if (holdInterval) {
+        clearInterval(holdInterval);
+        holdInterval = null;
+      }
+    }
+    
+    incrementBtn.addEventListener('mousedown', (e) => startHold(increment, e));
+    incrementBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startHold(increment, e); });
+    incrementBtn.addEventListener('mouseup', stopHold);
+    incrementBtn.addEventListener('mouseleave', stopHold);
+    incrementBtn.addEventListener('touchend', stopHold);
+    
+    decrementBtn.addEventListener('mousedown', (e) => startHold(decrement, e));
+    decrementBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startHold(decrement, e); });
+    decrementBtn.addEventListener('mouseup', stopHold);
+    decrementBtn.addEventListener('mouseleave', stopHold);
+    decrementBtn.addEventListener('touchend', stopHold);
+
+    // Also handle keyboard hold
+    let keyHoldInterval = null;
+    document.addEventListener('keydown', (e) => { 
+      if (e.repeat) return; // Don't handle repeated keydown
+      if (e.code === 'Space') { 
+        e.preventDefault(); 
+        increment(e); 
+        keyHoldInterval = setInterval(() => increment(e), holdDelay);
+      } else if (e.code === 'ArrowUp' || e.code === 'ArrowRight') { 
+        e.preventDefault(); 
+        increment(e); 
+        keyHoldInterval = setInterval(() => increment(e), holdDelay);
+      } else if (e.code === 'ArrowDown' || e.code === 'ArrowLeft') { 
+        e.preventDefault(); 
+        decrement(e); 
+        keyHoldInterval = setInterval(() => decrement(e), holdDelay);
+      } else if (e.code === 'KeyT') { 
+        setTheme(!isLight); 
+      } else if (e.code === 'KeyS') { 
+        soundEnabled = !soundEnabled; 
+        localStorage.setItem('counter_sound', soundEnabled); 
+        updateSoundUI(); 
+      } else if (e.code === 'KeyR' && (e.ctrlKey || e.metaKey)) { 
+        e.preventDefault(); 
+        reset(); 
+      } 
+    });
+    document.addEventListener('keyup', () => { if (keyHoldInterval) { clearInterval(keyHoldInterval); keyHoldInterval = null; } });
     themeToggle.addEventListener('click', () => setTheme(!isLight));
     soundToggle.addEventListener('click', () => { soundEnabled = !soundEnabled; localStorage.setItem('counter_sound', soundEnabled); updateSoundUI(); });
     setInterval(updateVelocity, 1000);
