@@ -230,6 +230,7 @@
     let holdDelay = 150; // ms between increments when holding
     
     function startHold(action, e) {
+      e.preventDefault();
       // First increment immediately
       action(e);
       // Then wait a bit before starting rapid increments
@@ -238,24 +239,31 @@
       }, 200);
     }
     
-    function stopHold() {
+    function stopHold(e) {
+      e.preventDefault();
       if (holdInterval) {
         clearInterval(holdInterval);
         holdInterval = null;
       }
     }
     
+    // Mouse events
     incrementBtn.addEventListener('mousedown', (e) => startHold(increment, e));
-    incrementBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startHold(increment, e); });
     incrementBtn.addEventListener('mouseup', stopHold);
     incrementBtn.addEventListener('mouseleave', stopHold);
-    incrementBtn.addEventListener('touchend', stopHold);
     
     decrementBtn.addEventListener('mousedown', (e) => startHold(decrement, e));
-    decrementBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startHold(decrement, e); });
     decrementBtn.addEventListener('mouseup', stopHold);
     decrementBtn.addEventListener('mouseleave', stopHold);
-    decrementBtn.addEventListener('touchend', stopHold);
+    
+    // Touch events for iOS
+    incrementBtn.addEventListener('touchstart', (e) => startHold(increment, e), { passive: false });
+    incrementBtn.addEventListener('touchend', (e) => stopHold(e), { passive: false });
+    incrementBtn.addEventListener('touchcancel', (e) => stopHold(e), { passive: false });
+    
+    decrementBtn.addEventListener('touchstart', (e) => startHold(decrement, e), { passive: false });
+    decrementBtn.addEventListener('touchend', (e) => stopHold(e), { passive: false });
+    decrementBtn.addEventListener('touchcancel', (e) => stopHold(e), { passive: false });
 
     // Also handle keyboard hold
     let keyHoldInterval = null;
